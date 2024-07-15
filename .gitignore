@@ -1,0 +1,10 @@
+#first ignore everything
+*
+# then not python files
+!*.py
+# now not gitignroe itself
+!.gitignore
+# then mayne shell scripts
+!*.sh
+# maybe text files as well
+!*.txt
