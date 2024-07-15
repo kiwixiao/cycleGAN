@@ -79,8 +79,8 @@ class Discriminator(nn.Module):
             *discriminator_block(input_channels, 32, normalize=False),
             *discriminator_block(32, 64),
             *discriminator_block(64, 128),
-            *discriminator_block(128, 256),
-            nn.Conv3d(256, 1, kernel_size=4, stride=1, padding=2)
+            #*discriminator_block(128, 256),
+            nn.Conv3d(128, 1, kernel_size=4, stride=2, padding=1)
         )
 
     def forward(self, x):
