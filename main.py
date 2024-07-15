@@ -15,8 +15,8 @@ def main():
     decay_epoch = 100
 
     # Paths
-    noncontrast_dir = 'path/to/noncontrast/images'
-    contrast_dir = 'path/to/contrast/images'
+    noncontrast_dir = './CTNC'
+    contrast_dir = './CTCE'
 
     # Device configuration
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
