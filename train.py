@@ -87,7 +87,7 @@ def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, num_ep
         lr_scheduler_D_NC.step()
         lr_scheduler_D_C.step()
 
-        if (epoch+1) % 10 == 0:
+        if (epoch+1) % 50 == 0:
             logger.info(f"Saving models at epoch {epoch+1}")
             torch.save(G_NC2C.state_dict(), f'G_NC2C_{epoch+1}.pth')
             torch.save(G_C2NC.state_dict(), f'G_C2NC_{epoch+1}.pth')
