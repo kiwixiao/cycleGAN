@@ -24,8 +24,8 @@ def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, num_ep
             check_tensor_size(noncontrast, (noncontrast.size(0), 1, 128, 128, 128), "Noncontrast input")
             check_tensor_size(contrast, (contrast.size(0), 1, 128, 128, 128), "Contrast input")
 
-            noncontrast = noncontrast.to(device)
-            contrast = contrast.to(device)
+            noncontrast = noncontrast.to(device).half() # convert input to float16 to match autocase mix precision.
+            contrast = contrast.to(device).half()
 
             valid = torch.ones((noncontrast.size(0), 1, 8, 8, 8), requires_grad=False).to(device)
             fake = torch.zeros((noncontrast.size(0), 1, 8, 8, 8), requires_grad=False).to(device)
