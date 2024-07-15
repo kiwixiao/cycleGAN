@@ -27,8 +27,8 @@ def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, num_ep
             noncontrast = noncontrast.to(device).half() # convert input to float16 to match autocase mix precision.
             contrast = contrast.to(device).half()
 
-            valid = torch.ones((noncontrast.size(0), 1, 8, 8, 8), requires_grad=False).to(device)
-            fake = torch.zeros((noncontrast.size(0), 1, 8, 8, 8), requires_grad=False).to(device)
+            valid = torch.ones((noncontrast.size(0), 1, 8, 8, 8), requires_grad=False).to(device).half()
+            fake = torch.zeros((noncontrast.size(0), 1, 8, 8, 8), requires_grad=False).to(device).half()
 
             # Train Generators
             optimizer_G.zero_grad()
