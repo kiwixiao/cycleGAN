@@ -36,6 +36,8 @@ class CTDataset(Dataset):
         
         if self.transform:
             img = self.transform(img)
+        #add channel dimension: (1, 128, 128, 128)
+        img = img.unsqueeze(0)
         
         check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
         return img
