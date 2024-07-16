@@ -43,7 +43,7 @@ def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, num_ep
             contrast = contrast.to(device).float()
 
             valid = torch.ones((noncontrast.size(0), 1, 8, 8, 8), requires_grad=False).to(device).float()
-            fake = torch.zeros((noncontrast.size(0), 1, 8, 8, 8), requires_grad=False).to(device).float())
+            fake = torch.zeros((noncontrast.size(0), 1, 8, 8, 8), requires_grad=False).to(device).float()
 
             # Train Generators
             optimizer_G.zero_grad()
