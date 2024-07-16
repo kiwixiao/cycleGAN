@@ -10,7 +10,7 @@ def evaluate(G_NC2C, noncontrast_loader, device, num_samples=10):
             if i >= num_samples:
                 break
             check_tensor_size(noncontrast, (1, 1, 128, 128, 128), f"Evaluation input {i}")
-            noncontrast = noncontrast.to(device).half()
+            noncontrast = noncontrast.to(device)
             fake_contrast = G_NC2C(noncontrast)
             check_tensor_size(fake_contrast, (1, 1, 128, 128, 128), f"Evaluation output {i}")
             
