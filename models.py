@@ -105,17 +105,17 @@ def plot_model(model, input_tensor, filename):
     dot.format = 'png'
     dot.render(filename)
 
-if __name__ == "__main__":
-    # Example usage
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# if __name__ == "__main__":
+#     # Example usage
+#     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # Create example models
-    G_NC2C = Generator(input_channels=1, output_channels=1).to(device)
-    D_NC = Discriminator(input_channels=1).to(device)
+#     # Create example models
+#     G_NC2C = Generator(input_channels=1, output_channels=1).to(device)
+#     D_NC = Discriminator(input_channels=1).to(device)
 
-    # Create example input tensors
-    example_input = torch.randn(1, 1, 128, 128, 128).to(device)
+#     # Create example input tensors
+#     example_input = torch.randn(1, 1, 128, 128, 128).to(device)
 
-    # Plot and save the models
-    plot_model(G_NC2C, example_input, 'Generator_Model')
-    plot_model(D_NC, example_input, 'Discriminator_Model')
+#     # Plot and save the models
+#     plot_model(G_NC2C, example_input, 'Generator_Model')
+#     plot_model(D_NC, example_input, 'Discriminator_Model')

@@ -43,7 +43,7 @@ class CTDataset(Dataset):
         check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
         return img
 
-def get_data_loaders(noncontrast_dir, contrast_dir, batch_size):
+def get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_size):
     transform = transforms.Compose([
         Normalize(),
         transforms.ToTensor(),

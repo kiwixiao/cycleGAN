@@ -16,6 +16,27 @@ def plot_and_save(training_losses, title, ylabel, filename):
     plt.savefig(filename)
     plt.close()
 
+def plot_predictions(G_NC2C, test_loader, device, epoch):
+    G_NC2C.eval()
+    with torch.no_grad():
+        for i, noncontrast in enumerate(test_loader):
+            noncontrast = noncontrast.to(device)
+            fake_contrast = G_NC2C(noncontrast)
+            
+            noncontrast_np = noncontrast.cpu().numpy()[0, 0, :, :, :]
+            fake_contrast_np = fake_contrast.cpu().numpy()[0, 0, :, :, :]
+            
+            fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+            axes[0].imshow(noncontrast_np[int(noncontrast_np.shape[0]/2)], cmap='gray')
+            axes[0].set_title('Noncontrast CT')
+            axes[1].imshow(fake_contrast_np[int(fake_contrast_np.shape[0]/2)], cmap='gray')
+            axes[1].set_title('Fake Contrast CT')
+            plt.savefig(f'prediction_epoch_{epoch}_sample_{i}.png')
+            plt.close()
+            
+            if i >= 4:  # Save plots for first 5 samples only
+                break
+
 def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, num_epochs, device, lr=0.0002, decay_epoch=100):
     criterion_GAN = nn.MSELoss()
     criterion_cycle = nn.L1Loss()
@@ -132,13 +153,16 @@ def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, num_ep
         writer.add_scalar('Cycle Consistency Loss', cycle_epoch_loss, epoch)
         writer.add_scalar('Identity Loss', identity_epoch_loss, epoch)
         
-        if (epoch+1) % 100 == 0:
+        if (epoch+1) % 50 == 0:
             logger.info(f"Saving models at epoch {epoch+1}")
             torch.save(G_NC2C.state_dict(), f'G_NC2C_{epoch+1}.pth')
             torch.save(G_C2NC.state_dict(), f'G_C2NC_{epoch+1}.pth')
             torch.save(D_NC.state_dict(), f'D_NC_{epoch+1}.pth')
             torch.save(D_C.state_dict(), f'D_C_{epoch+1}.pth')
     
+            # Plot and save predictions
+            plot_predictions(G_NC2C, test_loader, device, epoch+1)
+
     writer.close()
 
     # Plot and save loss graphs
