@@ -24,7 +24,7 @@ def denormalize(image, original_min, original_max):
 def plot_predictions(G_NC2C, test_loader, device, epoch):
     G_NC2C.eval()
     with torch.no_grad():
-        for i, noncontrast in enumerate(test_loader):
+        for i, (noncontrast, original_min, original_max) in enumerate(test_loader):
             noncontrast = noncontrast.to(device).float()
             fake_contrast = G_NC2C(noncontrast)
             

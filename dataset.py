@@ -29,6 +29,9 @@ class CTDataset(Dataset):
         else:  # .nrrd
             img, _ = nrrd.read(file_path)
         
+        original_min = img.min()
+        original_max = img.max()
+        
         if self.patch_size:
             # Extract a random patch
             x = random.randint(0, img.shape[0] - self.patch_size)
@@ -46,7 +49,7 @@ class CTDataset(Dataset):
         img = img.unsqueeze(0)
         
         check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
-        return img
+        return img, original_min, original_max
 
 def get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_size, patch_size=128):
     transform = transforms.Compose([
