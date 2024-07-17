@@ -20,7 +20,7 @@ def plot_predictions(G_NC2C, test_loader, device, epoch):
     G_NC2C.eval()
     with torch.no_grad():
         for i, noncontrast in enumerate(test_loader):
-            noncontrast = noncontrast.to(device)
+            noncontrast = noncontrast.to(device).float()
             fake_contrast = G_NC2C(noncontrast)
             
             noncontrast_np = noncontrast.cpu().numpy()[0, 0, :, :, :]
@@ -37,7 +37,7 @@ def plot_predictions(G_NC2C, test_loader, device, epoch):
             if i >= 4:  # Save plots for first 5 samples only
                 break
 
-def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, test_noncontrast_loader, num_epochs, device, lr=0.0002, decay_epoch=100):
+def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, test_noncontrast_loader, num_epochs, device, lr=0.0002, decay_epoch=100, autosave_per_epochs=10):
     criterion_GAN = nn.MSELoss()
     criterion_cycle = nn.L1Loss()
     criterion_identity = nn.L1Loss()
@@ -153,7 +153,7 @@ def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, test_n
         writer.add_scalar('Cycle Consistency Loss', cycle_epoch_loss, epoch)
         writer.add_scalar('Identity Loss', identity_epoch_loss, epoch)
         
-        if (epoch+1) % 50 == 0:
+        if (epoch+1) % autosave_per_epochs == 0:
             logger.info(f"Saving models at epoch {epoch+1}")
             torch.save(G_NC2C.state_dict(), f'G_NC2C_{epoch+1}.pth')
             torch.save(G_C2NC.state_dict(), f'G_C2NC_{epoch+1}.pth')
@@ -161,7 +161,7 @@ def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, test_n
             torch.save(D_C.state_dict(), f'D_C_{epoch+1}.pth')
     
             # Plot and save predictions
-            plot_predictions(G_NC2C, test_loader, device, epoch+1)
+            plot_predictions(G_NC2C, test_noncontrast_loader, device, epoch+1)
 
     writer.close()
 

@@ -10,9 +10,10 @@ def main():
 
     # Hyperparameters
     batch_size = 1
-    num_epochs = 100
+    num_epochs = 50
     lr = 0.0002
-    decay_epoch = 100
+    decay_epoch = 10
+    autosave_per_epochs = 10
 
     # Paths
     noncontrast_dir = './CTNC'
@@ -40,13 +41,20 @@ def main():
 
     # Train
     logger.info("Starting training")
-    train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, test_noncontrast_loader, num_epochs, device, lr, decay_epoch)
+    train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, test_noncontrast_loader, num_epochs, device, lr, decay_epoch, autosave_per_epochs)
 
     # Evaluate
     logger.info("Starting evaluation")
     evaluate(G_NC2C, noncontrast_loader, device)
 
     logger.info("Process completed successfully")
+
+    # after training is complete, delete dataloader
+    del noncontrast_loader
+    del contrast_loader
+    del test_noncontrast_loader
+    # clear GPU cache
+    torch.cuda.empty_cache()
 
 if __name__ == '__main__':
     main()
