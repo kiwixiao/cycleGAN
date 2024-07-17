@@ -6,6 +6,7 @@ from utils import logger, check_tensor_size
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 import nibabel as nib
+import numpy as np
 
 def plot_and_save(training_losses, title, ylabel, filename):
     plt.figure()
