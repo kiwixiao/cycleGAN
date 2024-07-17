@@ -1,8 +1,19 @@
 import logging
 import torch
+import os
+from datetime import datetime
 
 def setup_logger():
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+    # Create a unique log filename based on the current date and time
+    log_filename = os.path.join('logs', f'log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt')
+    
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+                        handlers=[
+                            logging.FileHandler(log_filename),
+                            logging.StreamHandler()
+                        ])
     return logging.getLogger(__name__)
 
 logger = setup_logger()
