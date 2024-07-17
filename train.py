@@ -5,6 +5,7 @@ from torch.cuda.amp import GradScaler, autocast
 from utils import logger, check_tensor_size
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
+import nibabel as nib
 
 def plot_and_save(training_losses, title, ylabel, filename):
     plt.figure()
@@ -33,6 +34,14 @@ def plot_predictions(G_NC2C, test_loader, device, epoch):
             axes[1].set_title('Fake Contrast CT')
             plt.savefig(f'prediction_epoch_{epoch}_sample_{i}.png')
             plt.close()
+
+            # save the full 3D volume
+            noncontrast_img = nib.NiftiImage(noncontrast_np, np.eye(4))
+            fake_contrast_img = nib.NiftiImage(fake_contrast_np, np.eye(4))
+
+            nib.save(noncontrast_img, f"noncontrast_epoch_{epoch}_sample_{i}.nii.gz")
+            nib.save(fake_contrast_img, f"fake_contrast_epoch_{epoch}_sample_{i}.nii.gz")
+            
             
             if i >= 4:  # Save plots for first 5 samples only
                 break
