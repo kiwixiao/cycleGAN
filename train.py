@@ -37,7 +37,7 @@ def plot_predictions(G_NC2C, test_loader, device, epoch):
             if i >= 4:  # Save plots for first 5 samples only
                 break
 
-def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, num_epochs, device, lr=0.0002, decay_epoch=100):
+def train(G_NC2C, G_C2NC, D_NC, D_C, noncontrast_loader, contrast_loader, test_noncontrast_loader, num_epochs, device, lr=0.0002, decay_epoch=100):
     criterion_GAN = nn.MSELoss()
     criterion_cycle = nn.L1Loss()
     criterion_identity = nn.L1Loss()
