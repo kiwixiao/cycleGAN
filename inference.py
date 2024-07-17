@@ -3,8 +3,23 @@ import nibabel as nib
 import numpy as np
 import os
 from models import Generator
-from utils import logger, denormalize
 from torchvision import transforms
+import logging
+
+# Set up logger
+def setup_logger():
+    logger = logging.getLogger("InferenceLogger")
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
+
+logger = setup_logger()
+
+def denormalize(image, original_min, original_max):
+    return image * (original_max - original_min) + original_min
 
 def load_model(checkpoint_path, device):
     model = Generator(1, 1).to(device)
