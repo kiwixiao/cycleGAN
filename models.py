@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from utils import check_tensor_size
+from torchviz import make_dot
 
 class ResidualBlock(nn.Module):
     def __init__(self, channels):
@@ -88,3 +89,33 @@ class Discriminator(nn.Module):
         output = self.model(x)
         check_tensor_size(output, (x.size(0), 1, 8, 8, 8), "Discriminator output")
         return output
+
+def plot_model(model, input_tensor, filename):
+    """
+    Plot the model architecture and save it as a PNG file.
+    
+    Parameters:
+    model (torch.nn.Module): The model to be visualized.
+    input_tensor (torch.Tensor): A sample input tensor.
+    filename (str): The filename to save the plot.
+    """
+    model.eval()
+    output = model(input_tensor)
+    dot = make_dot(output, params=dict(list(model.named_parameters()) + [('input', input_tensor)]))
+    dot.format = 'png'
+    dot.render(filename)
+
+if __name__ == "__main__":
+    # Example usage
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # Create example models
+    G_NC2C = Generator(input_channels=1, output_channels=1).to(device)
+    D_NC = Discriminator(input_channels=1).to(device)
+
+    # Create example input tensors
+    example_input = torch.randn(1, 1, 128, 128, 128).to(device)
+
+    # Plot and save the models
+    plot_model(G_NC2C, example_input, 'Generator_Model')
+    plot_model(D_NC, example_input, 'Discriminator_Model')
