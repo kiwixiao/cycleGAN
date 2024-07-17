@@ -35,13 +35,14 @@ class CTDataset(Dataset):
             y = random.randint(0, img.shape[1] - self.patch_size)
             z = random.randint(0, img.shape[2] - self.patch_size)
             img = img[x:x+self.patch_size, y:y+self.patch_size, z:z+self.patch_size]
-            
+            check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
+
         if self.transform:
             img = self.transform(img)
         #add channel dimension: (1, 128, 128, 128)
         img = img.unsqueeze(0)
         
-        check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
+        #check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
         return img
 
 def get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_size, patch_size=128):
