@@ -18,6 +18,9 @@ def plot_and_save(training_losses, title, ylabel, filename):
     plt.savefig(filename)
     plt.close()
 
+def denormalize(image, original_min, original_max):
+    return image * (original_max - original_min) + original_min
+
 def plot_predictions(G_NC2C, test_loader, device, epoch):
     G_NC2C.eval()
     with torch.no_grad():
@@ -27,6 +30,13 @@ def plot_predictions(G_NC2C, test_loader, device, epoch):
             
             noncontrast_np = noncontrast.cpu().numpy()[0, 0, :, :, :]
             fake_contrast_np = fake_contrast.cpu().numpy()[0, 0, :, :, :]
+
+            # Denormalize to get back to HU
+            original_min = original_min.item()
+            original_max = original_max.item()
+            noncontrast_np = denormalize(noncontrast_np, original_min, original_max)
+            fake_contrast_np = denormalize(fake_contrast_np, original_min, original_max)
+
             
             fig, axes = plt.subplots(1, 2, figsize=(10, 5))
             axes[0].imshow(noncontrast_np[int(noncontrast_np.shape[0]/2)], cmap='gray')
