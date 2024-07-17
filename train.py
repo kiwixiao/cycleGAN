@@ -5,6 +5,7 @@ from torch.cuda.amp import GradScaler, autocast
 from utils import logger, check_tensor_size
 import matplotlib.pyplot as plt
 
+
 def plot_and_save(training_losses, title, ylabel, filename):
     plt.figure()
     plt.plot(training_losses, label='Training')
