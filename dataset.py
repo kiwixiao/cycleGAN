@@ -13,7 +13,7 @@ class Normalize(object):
 
 
 class CTDataset(Dataset):
-    def __init__(self, root_dir, transform=None, patch_size=128:
+    def __init__(self, root_dir, transform=None, patch_size=128):
         self.root_dir = root_dir
         self.transform = transform
         self.files = [f for f in os.listdir(root_dir) if f.endswith('.nii.gz') or f.endswith('.nrrd')]
