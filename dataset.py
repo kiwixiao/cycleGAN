@@ -35,8 +35,7 @@ class CTDataset(Dataset):
             y = random.randint(0, img.shape[1] - self.patch_size)
             z = random.randint(0, img.shape[2] - self.patch_size)
             img = img[x:x+self.patch_size, y:y+self.patch_size, z:z+self.patch_size]
-            check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
-
+            
         if self.transform:
             img = self.transform(img)
         #add channel dimension: (1, 128, 128, 128)
