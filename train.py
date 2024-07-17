@@ -4,7 +4,7 @@ import torch.optim as optim
 from torch.cuda.amp import GradScaler, autocast
 from utils import logger, check_tensor_size
 import matplotlib.pyplot as plt
-import torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
 def plot_and_save(training_losses, title, ylabel, filename):
     plt.figure()

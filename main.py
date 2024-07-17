@@ -1,6 +1,6 @@
 import torch
 from dataset import get_data_loaders
-from models import Generator, Discriminator
+from models import Generator, Discriminator, plot_model
 from train import train
 from evaluate import evaluate
 from utils import logger
