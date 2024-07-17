@@ -36,8 +36,8 @@ def plot_predictions(G_NC2C, test_loader, device, epoch):
             plt.close()
 
             # save the full 3D volume
-            noncontrast_img = nib.NiftiImage(noncontrast_np, np.eye(4))
-            fake_contrast_img = nib.NiftiImage(fake_contrast_np, np.eye(4))
+            noncontrast_img = nib.Nifti1Image(noncontrast_np, np.eye(4))
+            fake_contrast_img = nib.Nifti1Image(fake_contrast_np, np.eye(4))
 
             nib.save(noncontrast_img, f"noncontrast_epoch_{epoch}_sample_{i}.nii.gz")
             nib.save(fake_contrast_img, f"fake_contrast_epoch_{epoch}_sample_{i}.nii.gz")
