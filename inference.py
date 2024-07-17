@@ -18,6 +18,11 @@ def setup_logger():
 
 logger = setup_logger()
 
+# Normalize class
+class Normalize(object):
+    def __call__(self, image):
+        return (image - image.min()) / (image.max() - image.min())
+
 def denormalize(image, original_min, original_max):
     return image * (original_max - original_min) + original_min
 
