@@ -5,6 +5,7 @@ import os
 from models import Generator
 from torchvision import transforms
 import logging
+import nrrd
 
 # Set up logger
 def setup_logger():
