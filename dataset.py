@@ -57,8 +57,8 @@ def get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_
     logger.info(f"Noncontrast dataset size: {len(noncontrast_dataset)}")
     logger.info(f"Contrast dataset size: {len(contrast_dataset)}")
 
-    noncontrast_loader = DataLoader(noncontrast_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True) # add num_workers and pin_memory to keep gpu busy all the time. this allows more efficient data feed from cpu to gpu.
-    contrast_loader = DataLoader(contrast_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    noncontrast_loader = DataLoader(noncontrast_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=False) # add num_workers and pin_memory to keep gpu busy all the time. this allows more efficient data feed from cpu to gpu.
+    contrast_loader = DataLoader(contrast_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=False)
 
     test_noncontrast_loader = DataLoader(test_noncontrast_dataset, batch_size=batch_size, shuffle=False)
 
