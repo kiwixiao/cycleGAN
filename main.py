@@ -10,9 +10,9 @@ def main():
 
     # Hyperparameters
     batch_size = 1
-    num_epochs = 50
+    num_epochs = 20
     lr = 0.0002
-    decay_epoch = 10
+    decay_epoch = 5
     autosave_per_epochs = 10
 
     # Paths

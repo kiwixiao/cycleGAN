@@ -36,12 +36,16 @@ class CTDataset(Dataset):
             z = random.randint(0, img.shape[2] - self.patch_size)
             img = img[x:x+self.patch_size, y:y+self.patch_size, z:z+self.patch_size]
             
+            expected_size = (1, self.patch_size, self.patch_size, self.patch_size)
+        else:
+            expected_size = (1, *img.shape)    
+
         if self.transform:
             img = self.transform(img)
         #add channel dimension: (1, 128, 128, 128)
         img = img.unsqueeze(0)
         
-        #check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
+        check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
         return img
 
 def get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_size, patch_size=128):
@@ -53,7 +57,7 @@ def get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_
     noncontrast_dataset = CTDataset(root_dir=noncontrast_dir, transform=transform, patch_size=patch_size)
     contrast_dataset = CTDataset(root_dir=contrast_dir, transform=transform, patch_size=patch_size)
 
-    test_noncontrast_dataset = CTDataset(root_dir=test_noncontrast_dir, transform=transform, patch_size=None)
+    test_noncontrast_dataset = CTDataset(root_dir=test_noncontrast_dir, transform=transform, patch_size=patch_size)
 
     logger.info(f"Noncontrast dataset size: {len(noncontrast_dataset)}")
     logger.info(f"Contrast dataset size: {len(contrast_dataset)}")
