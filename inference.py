@@ -6,7 +6,6 @@ from models import Generator
 from torchvision import transforms
 import logging
 from skimage.util import view_as_windows
-import nrrd
 
 # Set up logger
 def setup_logger():
@@ -75,26 +74,28 @@ def infer(checkpoint_path, input_image_path, transform):
     model = load_model(checkpoint_path, device)
 
     if input_image_path.endswith('.nii.gz'):
-        img = nib.load(input_image_path).get_fdata()
+        img = nib.load(input_image_path)
     else:  # .nrrd
         img, _ = nrrd.read(input_image_path)
 
-    original_min = img.min()
-    original_max = img.max()
+    img_data = img.get_fdata()
+    original_min = img_data.min()
+    original_max = img_data.max()
 
-    img = transform(img).numpy()  # Apply transform and convert to numpy array
-    img = np.expand_dims(img, axis=0)  # Add channel dimension: (1, D, H, W)
+    img_data = transform(img_data).numpy()  # Apply transform and convert to numpy array
+    img_data = np.expand_dims(img_data, axis=0)  # Add channel dimension: (1, D, H, W)
 
     patch_size = 128
     step_size = patch_size // 2  # Overlapping patches
-    predicted_img = sliding_window_inference(model, img, patch_size, step_size, device)
-    predicted_img = denormalize(predicted_img, original_min, original_max)
+    predicted_img_data = sliding_window_inference(model, img_data, patch_size, step_size, device)
+    predicted_img_data = denormalize(predicted_img_data, original_min, original_max)
 
     # Prepare the output file path
     output_image_path = input_image_path.replace('.nii.gz', '_predicted_contrast.nii.gz').replace('.nrrd', '_predicted_contrast.nii.gz')
     
-    predicted_img_nifti = nib.Nifti1Image(predicted_img, np.eye(4))
-    nib.save(predicted_img_nifti, output_image_path)
+    # Use the affine and header from the input image to save the output
+    predicted_img = nib.Nifti1Image(predicted_img_data, img.affine, img.header)
+    nib.save(predicted_img, output_image_path)
     logger.info(f"Saved predicted fake contrast image to {output_image_path}")
 
 if __name__ == "__main__":
