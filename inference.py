@@ -5,7 +5,6 @@ import os
 from models import Generator
 from torchvision import transforms
 import logging
-from skimage.util import view_as_windows
 import nrrd
 
 # Set up logger
@@ -76,10 +75,13 @@ def infer(checkpoint_path, input_image_path, transform):
 
     if input_image_path.endswith('.nii.gz'):
         img = nib.load(input_image_path)
+        img_data = img.get_fdata()
+        affine = img.affine
+        header = img.header
     else:  # .nrrd
-        img, _ = nrrd.read(input_image_path)
+        img_data, header = nrrd.read(input_image_path)
+        affine = np.eye(4)  # NRRD files do not have affine by default
 
-    img_data = img.get_fdata()
     original_min = img_data.min()
     original_max = img_data.max()
 
@@ -95,7 +97,7 @@ def infer(checkpoint_path, input_image_path, transform):
     output_image_path = input_image_path.replace('.nii.gz', '_predicted_contrast.nii.gz').replace('.nrrd', '_predicted_contrast.nii.gz')
     
     # Use the affine and header from the input image to save the output
-    predicted_img = nib.Nifti1Image(predicted_img_data, img.affine, img.header)
+    predicted_img = nib.Nifti1Image(predicted_img_data, affine, header)
     nib.save(predicted_img, output_image_path)
     logger.info(f"Saved predicted fake contrast image to {output_image_path}")
 
