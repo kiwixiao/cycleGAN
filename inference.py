@@ -22,10 +22,12 @@ logger = setup_logger()
 # Normalize class
 class Normalize(object):
     def __call__(self, image):
+        # Normalize image to the range [0, 1]
         return (image - image.min()) / (image.max() - image.min())
 
 # Denormalize function
 def denormalize(image, original_min, original_max):
+    # Denormalize image back to the original intensity range
     return image * (original_max - original_min) + original_min
 
 # Load model function
@@ -37,8 +39,9 @@ def load_model(checkpoint_path, device):
 
 # Process image function
 def process_image(image, transform):
+    # Apply transformation and add batch and channel dimensions
     image = transform(image)
-    image = image.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions: (1, 1, D, H, W)
+    image = image.unsqueeze(0).unsqueeze(0)  # (1, 1, D, H, W)
     return image
 
 # Sliding window inference function
@@ -90,40 +93,50 @@ def infer(checkpoint_path, input_image_path, transform, patch_size=128, step_siz
         img_data, header = nrrd.read(input_image_path)
         affine = None  # NRRD files do not have affine by default
         original_dtype = img_data.dtype
+        spacing = header.get('space directions')  # Get voxel spacing from NRRD header
 
     original_min = img_data.min()
     original_max = img_data.max()
 
-    img_data = transform(img_data).numpy()  # Apply transform and convert to numpy array
+    # Normalize the image data before processing
+    img_data = transform(img_data).permute(2, 0, 1)  # Permute to match the expected shape (D, H, W)
+    img_data = img_data.numpy()  # Convert to numpy array
     img_data = np.expand_dims(img_data, axis=0)  # Add channel dimension: (1, D, H, W)
 
+    # Perform sliding window inference
     predicted_img_data = sliding_window_inference(model, img_data, patch_size, step_size, device)
+    # Denormalize the predicted image data back to the original intensity range
     predicted_img_data = denormalize(predicted_img_data, original_min, original_max)
-    predicted_img_data = predicted_img_data.astype(original_dtype)  # Ensure the data type matches the original
+    # Ensure the data type matches the original
+    predicted_img_data = predicted_img_data.astype(original_dtype)
+    predicted_img_data = np.squeeze(predicted_img_data).transpose(1, 2, 0)  # Transpose back to original shape
 
-    # Prepare the output file path
+    # Prepare the output file path and save the predicted image
     if input_image_path.endswith('.nii.gz'):
         output_image_path = input_image_path.replace('.nii.gz', '_predicted_contrast.nii.gz')
         predicted_img = nib.Nifti1Image(predicted_img_data, affine, header)
         nib.save(predicted_img, output_image_path)
     else:  # .nrrd
         output_image_path = input_image_path.replace('.nrrd', '_predicted_contrast.nrrd')
+        # Ensure the header includes the correct voxel spacing
+        header['space directions'] = spacing
         nrrd.write(output_image_path, predicted_img_data, header)
 
     logger.info(f"Saved predicted fake contrast image to {output_image_path}")
 
 if __name__ == "__main__":
     import argparse
-
+    from torchvision import transforms
+    
     parser = argparse.ArgumentParser(description="Inference script for 3D CycleGAN")
     parser.add_argument("checkpoint_path", type=str, help="Path to the model checkpoint")
     parser.add_argument("input_image_path", type=str, help="Path to the input 3D CT image")
-
+    
     args = parser.parse_args()
-
+    
     transform = transforms.Compose([
-        transforms.ToTensor(),
-        Normalize(),
+        transforms.Lambda(lambda img: torch.from_numpy(img).float()),  # Convert to tensor
+        Normalize(),  # Normalize the image data
     ])
-
+    
     infer(args.checkpoint_path, args.input_image_path, transform)
