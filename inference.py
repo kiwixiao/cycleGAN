@@ -56,8 +56,8 @@ def sliding_window_inference(model, image, patch_size, step_size, device):
                 j_end = min(j + patch_size, y)
                 k_end = min(k + patch_size, x)
                 
-                # Extract patch and pad if necessary
-                patch = np.zeros((1, i_end-i, j_end-j, k_end-k))
+                # Create a patch of the expected size and pad if necessary
+                patch = np.zeros((1, patch_size, patch_size, patch_size))
                 patch[:, :i_end-i, :j_end-j, :k_end-k] = image[:, i:i_end, j:j_end, k:k_end]
                 patch = torch.tensor(patch).to(device).float().unsqueeze(0)
                 
