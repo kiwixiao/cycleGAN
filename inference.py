@@ -76,7 +76,7 @@ def sliding_window_inference(model, image, patch_size, step_size, device):
     return output
 
 # Inference function
-def infer(checkpoint_path, input_image_path, transform):
+def infer(checkpoint_path, input_image_path, transform, patch_size=128, step_size=64):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = load_model(checkpoint_path, device)
 
@@ -97,8 +97,6 @@ def infer(checkpoint_path, input_image_path, transform):
     img_data = transform(img_data).numpy()  # Apply transform and convert to numpy array
     img_data = np.expand_dims(img_data, axis=0)  # Add channel dimension: (1, D, H, W)
 
-    patch_size = 128
-    step_size = patch_size // 2  # Overlapping patches
     predicted_img_data = sliding_window_inference(model, img_data, patch_size, step_size, device)
     predicted_img_data = denormalize(predicted_img_data, original_min, original_max)
     predicted_img_data = predicted_img_data.astype(original_dtype)  # Ensure the data type matches the original
