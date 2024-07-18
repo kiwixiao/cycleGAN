@@ -44,36 +44,29 @@ def process_image(image, transform):
 
 # Sliding window inference function
 def sliding_window_inference(model, image, patch_size, step_size, device):
-    c, z, y, x = image.shape
-    window_shape = (c, patch_size, patch_size, patch_size)
-    step_shape = (c, step_size, step_size, step_size)
-    windows = view_as_windows(image, window_shape, step_shape)
-    windows_shape = windows.shape
-    windows = windows.reshape(-1, *window_shape)
-    output_patches = []
+    _, z, y, x = image.shape
+    output = np.zeros((z, y, x))
+    count_map = np.zeros((z, y, x))
 
-    for patch in windows:
-        patch = torch.tensor(patch).to(device).float()
-        with torch.no_grad():
-            output_patch = model(patch.unsqueeze(0))
-        output_patches.append(output_patch.cpu().numpy()[0, 0])
-
-    output_patches = np.array(output_patches)
-    output_patches = output_patches.reshape(*windows_shape[:-4], *output_patches.shape[1:])
-    output = np.zeros_like(image[0])
-
-    count_map = np.zeros_like(output)
-    for i in range(output_patches.shape[0]):
-        for j in range(output_patches.shape[1]):
-            for k in range(output_patches.shape[2]):
-                output[i*step_size:i*step_size+patch_size, 
-                       j*step_size:j*step_size+patch_size, 
-                       k*step_size:k*step_size+patch_size] += output_patches[i, j, k]
-                count_map[i*step_size:i*step_size+patch_size, 
-                          j*step_size:j*step_size+patch_size, 
-                          k*step_size:k*step_size+patch_size] += 1
-
+    # Slide over the image with the patch size and step size
+    for i in range(0, z - patch_size + 1, step_size):
+        for j in range(0, y - patch_size + 1, step_size):
+            for k in range(0, x - patch_size + 1, step_size):
+                patch = image[:, i:i+patch_size, j:j+patch_size, k:k+patch_size]
+                patch = torch.tensor(patch).to(device).float().unsqueeze(0)
+                
+                with torch.no_grad():
+                    output_patch = model(patch)
+                
+                output_patch = output_patch.cpu().numpy()[0, 0]
+                
+                output[i:i+patch_size, j:j+patch_size, k:k+patch_size] += output_patch
+                count_map[i:i+patch_size, j:j+patch_size, k:k+patch_size] += 1
+    
+    # Avoid division by zero
+    count_map[count_map == 0] = 1
     output /= count_map
+
     return output
 
 # Inference function
