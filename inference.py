@@ -48,19 +48,26 @@ def sliding_window_inference(model, image, patch_size, step_size, device):
     count_map = np.zeros((z, y, x))
 
     # Slide over the image with the patch size and step size
-    for i in range(0, z - patch_size + 1, step_size):
-        for j in range(0, y - patch_size + 1, step_size):
-            for k in range(0, x - patch_size + 1, step_size):
-                patch = image[:, i:i+patch_size, j:j+patch_size, k:k+patch_size]
+    for i in range(0, z, step_size):
+        for j in range(0, y, step_size):
+            for k in range(0, x, step_size):
+                # Ensure patches fit within the image dimensions
+                i_end = min(i + patch_size, z)
+                j_end = min(j + patch_size, y)
+                k_end = min(k + patch_size, x)
+                
+                # Extract patch and pad if necessary
+                patch = np.zeros((1, i_end-i, j_end-j, k_end-k))
+                patch[:, :i_end-i, :j_end-j, :k_end-k] = image[:, i:i_end, j:j_end, k:k_end]
                 patch = torch.tensor(patch).to(device).float().unsqueeze(0)
                 
                 with torch.no_grad():
                     output_patch = model(patch)
                 
-                output_patch = output_patch.cpu().numpy()[0, 0]
+                output_patch = output_patch.cpu().numpy()[0, 0, :i_end-i, :j_end-j, :k_end-k]
                 
-                output[i:i+patch_size, j:j+patch_size, k:k+patch_size] += output_patch
-                count_map[i:i+patch_size, j:j+patch_size, k:k+patch_size] += 1
+                output[i:i_end, j:j_end, k:k_end] += output_patch
+                count_map[i:i_end, j:j_end, k:k_end] += 1
     
     # Avoid division by zero
     count_map[count_map == 0] = 1
@@ -78,9 +85,11 @@ def infer(checkpoint_path, input_image_path, transform):
         img_data = img.get_fdata()
         affine = img.affine
         header = img.header
+        original_dtype = img_data.dtype
     else:  # .nrrd
         img_data, header = nrrd.read(input_image_path)
         affine = None  # NRRD files do not have affine by default
+        original_dtype = img_data.dtype
 
     original_min = img_data.min()
     original_max = img_data.max()
@@ -92,6 +101,7 @@ def infer(checkpoint_path, input_image_path, transform):
     step_size = patch_size // 2  # Overlapping patches
     predicted_img_data = sliding_window_inference(model, img_data, patch_size, step_size, device)
     predicted_img_data = denormalize(predicted_img_data, original_min, original_max)
+    predicted_img_data = predicted_img_data.astype(original_dtype)  # Ensure the data type matches the original
 
     # Prepare the output file path
     if input_image_path.endswith('.nii.gz'):
