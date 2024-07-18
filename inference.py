@@ -80,7 +80,7 @@ def infer(checkpoint_path, input_image_path, transform):
         header = img.header
     else:  # .nrrd
         img_data, header = nrrd.read(input_image_path)
-        affine = np.eye(4)  # NRRD files do not have affine by default
+        affine = None  # NRRD files do not have affine by default
 
     original_min = img_data.min()
     original_max = img_data.max()
@@ -94,13 +94,12 @@ def infer(checkpoint_path, input_image_path, transform):
     predicted_img_data = denormalize(predicted_img_data, original_min, original_max)
 
     # Prepare the output file path
-    output_image_path = input_image_path.replace('.nii.gz', '_predicted_contrast.nii.gz').replace('.nrrd', '_predicted_contrast.nii.gz')
-    
     if input_image_path.endswith('.nii.gz'):
-        # Use the affine and header from the input image to save the output
+        output_image_path = input_image_path.replace('.nii.gz', '_predicted_contrast.nii.gz')
         predicted_img = nib.Nifti1Image(predicted_img_data, affine, header)
         nib.save(predicted_img, output_image_path)
     else:  # .nrrd
+        output_image_path = input_image_path.replace('.nrrd', '_predicted_contrast.nrrd')
         nrrd.write(output_image_path, predicted_img_data, header)
 
     logger.info(f"Saved predicted fake contrast image to {output_image_path}")
