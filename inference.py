@@ -6,6 +6,7 @@ from models import Generator
 from torchvision import transforms
 import logging
 from skimage.util import view_as_windows
+import nrrd
 
 # Set up logger
 def setup_logger():
