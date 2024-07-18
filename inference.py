@@ -96,9 +96,13 @@ def infer(checkpoint_path, input_image_path, transform):
     # Prepare the output file path
     output_image_path = input_image_path.replace('.nii.gz', '_predicted_contrast.nii.gz').replace('.nrrd', '_predicted_contrast.nii.gz')
     
-    # Use the affine and header from the input image to save the output
-    predicted_img = nib.Nifti1Image(predicted_img_data, affine, header)
-    nib.save(predicted_img, output_image_path)
+    if input_image_path.endswith('.nii.gz'):
+        # Use the affine and header from the input image to save the output
+        predicted_img = nib.Nifti1Image(predicted_img_data, affine, header)
+        nib.save(predicted_img, output_image_path)
+    else:  # .nrrd
+        nrrd.write(output_image_path, predicted_img_data, header)
+
     logger.info(f"Saved predicted fake contrast image to {output_image_path}")
 
 if __name__ == "__main__":
