@@ -29,6 +29,9 @@ class CTDataset(Dataset):
         else:  # .nrrd
             img, _ = nrrd.read(file_path)
         
+        # clip the image intensity between -1000 and 1000 HU
+        img = np.clip(img, -1000, 1000) # this is optional, if the training is not optimial, maybe can comment out.
+
         original_min = img.min()
         original_max = img.max()
         
