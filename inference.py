@@ -6,6 +6,7 @@ from models import Generator
 from torchvision import transforms
 import logging
 import nrrd
+from scipy.ndimage import gaussian_filter
 
 # Set up logger
 def setup_logger():
@@ -45,7 +46,7 @@ def process_image(image, transform):
     return image
 
 # Sliding window inference function
-def sliding_window_inference(model, image, patch_size, step_size, device):
+def sliding_window_inference(model, image, patch_size, step_size, device, sigma=1):
     _, z, y, x = image.shape
     output = np.zeros((z, y, x))
     count_map = np.zeros((z, y, x))
@@ -76,6 +77,9 @@ def sliding_window_inference(model, image, patch_size, step_size, device):
     count_map[count_map == 0] = 1
     output /= count_map
 
+    # apply Gaussian smoothing to the entire output
+    output = gaussian_filter(output, sigma=sigma)
+
     return output
 
 # Inference function
@@ -94,6 +98,8 @@ def infer(checkpoint_path, input_image_path, transform, patch_size=128, step_siz
         affine = None  # NRRD files do not have affine by default
         original_dtype = img_data.dtype
         spacing = header.get('space directions')  # Get voxel spacing from NRRD header
+
+    img_data = np.clip(img_data, -1000, 1000) # clip the HU between -1000 and 1000, this is how the model is trained as well.
 
     original_min = img_data.min()
     original_max = img_data.max()
@@ -139,4 +145,5 @@ if __name__ == "__main__":
         Normalize(),  # Normalize the image data
     ])
     
+    step_size = 32
     infer(args.checkpoint_path, args.input_image_path, transform)
