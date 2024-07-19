@@ -45,11 +45,21 @@ def process_image(image, transform):
     image = image.unsqueeze(0).unsqueeze(0)  # (1, 1, D, H, W)
     return image
 
+def create_gaussian_window(size, sigma):
+    """Create a Gaussian window."""
+    coords = np.linspace(-1, 1, size)
+    x, y, z = np.meshgrid(coords, coords, coords)
+    gauss = np.exp(-(x**2 + y**2 + z**2) / (2 * sigma**2))
+    return gauss
+
 # Sliding window inference function
-def sliding_window_inference(model, image, patch_size, step_size, device, sigma=1):
+def sliding_window_inference(model, image, patch_size, step_size, device, sigma=0.5):
     _, z, y, x = image.shape
     output = np.zeros((z, y, x))
     count_map = np.zeros((z, y, x))
+
+    # create gaussian window
+    gaussian_window = create_gaussian_window(patch_size, sigma)
 
     # Slide over the image with the patch size and step size
     for i in range(0, z, step_size):
@@ -70,20 +80,20 @@ def sliding_window_inference(model, image, patch_size, step_size, device, sigma=
                 
                 output_patch = output_patch.cpu().numpy()[0, 0, :i_end-i, :j_end-j, :k_end-k]
                 
-                output[i:i_end, j:j_end, k:k_end] += output_patch
-                count_map[i:i_end, j:j_end, k:k_end] += 1
+                output[i:i_end, j:j_end, k:k_end] += output_patch * gaussian_window[:i_end-i, :j_end-j, :k_end-k]
+                count_map[i:i_end, j:j_end, k:k_end] += gaussian_window[:i_end-i, :j_end-j, :k_end-k]
     
     # Avoid division by zero
     count_map[count_map == 0] = 1
     output /= count_map
 
     # apply Gaussian smoothing to the entire output
-    output = gaussian_filter(output, sigma=sigma)
+    #output = gaussian_filter(output, sigma=sigma)
 
     return output
 
 # Inference function
-def infer(checkpoint_path, input_image_path, transform, patch_size=128, step_size=64):
+def infer(checkpoint_path, input_image_path, transform, patch_size=128, step_size=32):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = load_model(checkpoint_path, device)
 
