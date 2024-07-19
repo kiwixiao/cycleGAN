@@ -10,10 +10,10 @@ def main():
 
     # Hyperparameters
     batch_size = 1
-    num_epochs = 20
+    num_epochs = 200
     lr = 0.0002
-    decay_epoch = 5
-    autosave_per_epochs = 10
+    decay_epoch = 100
+    autosave_per_epochs = 20
 
     # Paths
     noncontrast_dir = './CTNC'
