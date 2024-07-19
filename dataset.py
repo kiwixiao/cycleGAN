@@ -6,6 +6,7 @@ import nibabel as nib
 import nrrd
 from torchvision import transforms
 from utils import logger, check_tensor_size
+import numpy as np
 
 class Normalize(object):
     def __call__(self, image):
