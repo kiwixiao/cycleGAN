@@ -7,6 +7,31 @@ import nrrd
 from torchvision import transforms
 from utils import logger, check_tensor_size
 import numpy as np
+import SimpleITK as sitk
+
+def resample_image(image, new_spacing=[0.6, 0.6, 0.6], is_label=False):
+    original_spacing = image.GetSpacing()
+    original_size = image.GetSize()
+
+    new_size = [
+        int(np.round(original_size[0] * (original_spacing[0] / new_spacing[0]))),
+        int(np.round(original_size[1] * (original_spacing[1] / new_spacing[1]))),
+        int(np.round(original_size[2] * (original_spacing[2] / new_spacing[2]))) 
+    ]
+
+    resample = sitk.ResampleImageFilter() # initilize an instance
+    resample.SetOutputSpacing(new_spacing) # call method
+    resample.SetSize(new_size)
+    resample.SetOutputDirection(image.GetDirection()) # make sure resampled image is the same orientation.
+    resample.SetOutputOrigin(image.GetOrigin)
+    resample.SetTransform(sitk.Transform()) # apply an identity transformation for ressampling
+    resample.SetDefaultPixelValue(image.GetPixelIDValue()) # give pixel an default value if resample pixel is outside the original image space
+    if is_label:
+        resample.SetInterpolator(sitk.sitkNearestNeighbor)
+    else:
+        resample.SetInterpolator(sitk.Linear)
+
+    return resample.Execute(image)
 
 class Normalize(object):
     def __call__(self, image):
