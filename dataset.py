@@ -33,9 +33,10 @@ def resample_image(image, new_spacing=[0.6, 0.6, 0.6], is_label=False):
 
     return resample.Execute(image)
 
-class Normalize(object):
+class Normalize:
     def __call__(self, image):
-        return (image - image.min()) / (image.max() - image.min())
+        # normalize it between -1 and 1, which is more common in cycleGAN network
+        return 2* ((image - image.min()) / (image.max() - image.min())) -1
 
 
 class CTDataset(Dataset):
