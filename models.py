@@ -21,10 +21,10 @@ class ResidualBlock(nn.Module):
         self.attention = SelfAttention(in_features)
 
     def forward(self, x):
-        check_tensor_size(x, (x.size(0), x.size(1), x.size(2), x.size(4)), "ResidualBlock input") # add dimensional check
+        check_tensor_size(x, (x.size(0), x.size(1), x.size(2), x.size(3), x.size(4)), "ResidualBlock input") # add dimensional check
         out = x + self.conv_block(x)
         out, _ = self.attention(out)
-        check_tensor_size(x, (x.size(0), x.size(1), x.size(2), x.size(4)), "ResidualBlock output") # add dimensional check
+        check_tensor_size(x, (x.size(0), x.size(1), x.size(2), x.size(3), x.size(4)), "ResidualBlock output") # add dimensional check
         return out
 
 # self attention mechanism
