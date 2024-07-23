@@ -59,7 +59,7 @@ class CTDataset(Dataset):
             img = sitk.GetImageFromArray(img)
             spacing = header.get('spacings', header.get('space directions', None))
             if spacing is not None:
-                img.SetSpacing(spacing)
+                img.SetSpacing([float(s) for s in spacing])
         
         img = resample_image(img)
         img = sitk.GetArrayFromImage(img)
