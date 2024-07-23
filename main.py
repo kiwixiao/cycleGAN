@@ -5,6 +5,17 @@ from train import train
 from evaluate import evaluate
 from utils import logger
 
+def estimate_model_memory(model, input_size, batch_size):
+    input_tensor = torch.randn(batch_size, *input_size).cuda()
+    output_tensor = model(input_tensor)
+    
+    input_memory = input_tensor.element_size() * input_tensor.nelement()
+    output_memory = output_tensor.element_size() * output_tensor.nelement()
+    param_memory = sum(p.element_size() * p.nelement() for p in model.parameters())
+    
+    total_memory = input_memory + output_memory + param_memory
+    return total_memory
+
 def main():
     logger.info("Starting 3D CycleGAN training process")
 
@@ -14,6 +25,9 @@ def main():
     lr = 0.0002
     decay_epoch = 100
     autosave_per_epochs = 20
+
+    img_size = (1,128,128,128)
+    memory_limit = 22 *1024**3
 
     # Paths
     noncontrast_dir = './CTNC'
@@ -39,6 +53,24 @@ def main():
     plot_model(G_C2NC, torch.randn(1, 1, 128, 128, 128).to(device), 'G_C2NC_initial')
     plot_model(D_NC, torch.randn(1, 1, 128, 128, 128).to(device), 'D_NC_initial')
     plot_model(D_C, torch.randn(1, 1, 128, 128, 128).to(device), 'D_C_initial')
+
+ # Estimate model memory
+    try:
+        total_memory_G_NC2C = estimate_model_memory(G_NC2C, img_size, batch_size)
+        total_memory_G_C2NC = estimate_model_memory(G_C2NC, img_size, batch_size)
+        total_memory_D_NC = estimate_model_memory(D_NC, img_size, batch_size)
+        total_memory_D_C = estimate_model_memory(D_C, img_size, batch_size)
+
+        total_memory = total_memory_G_NC2C + total_memory_G_C2NC + total_memory_D_NC + total_memory_D_C
+
+        if total_memory > memory_limit:
+            raise MemoryError(f"Estimated memory required: {total_memory / (1024**3):.2f} GB exceeds limit of 22 GB. Please reduce model size or batch size.")
+
+        logger.info(f"Estimated total memory required: {total_memory / (1024**3):.2f} GB")
+    except MemoryError as e:
+        logger.error(str(e))
+        return
+
 
     # Train
     logger.info("Starting training")
