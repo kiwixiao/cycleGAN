@@ -53,15 +53,19 @@ class CTDataset(Dataset):
         file_path = os.path.join(self.root_dir, self.files[idx])
         if file_path.endswith('.nii.gz'):
             img = nib.load(file_path).get_fdata()
+            img = sitk.GetImageFromArray(img)
         else:  # .nrrd
-            img, _ = nrrd.read(file_path)
+            img, header = nrrd.read(file_path)
+            img = sitk.GetImageFromArray(img)
+            spacing = header.get('spacings', header.get('space directions', None))
+            if spacing is not None:
+                img.SetSpacing(spacing)
         
+        img = resample_image(img)
+        img = sitk.GetArrayFromImage(img)
         # clip the image intensity between -1000 and 1000 HU
         img = np.clip(img, -1000, 1000) # this is optional, if the training is not optimial, maybe can comment out.
 
-        original_min = img.min()
-        original_max = img.max()
-        
         if self.patch_size:
             # Extract a random patch
             x = random.randint(0, img.shape[0] - self.patch_size)
@@ -69,16 +73,12 @@ class CTDataset(Dataset):
             z = random.randint(0, img.shape[2] - self.patch_size)
             img = img[x:x+self.patch_size, y:y+self.patch_size, z:z+self.patch_size]
             
-            expected_size = (1, self.patch_size, self.patch_size, self.patch_size)
-        else:
-            expected_size = (1, *img.shape)    
-
         if self.transform:
             img = self.transform(img)
         #add channel dimension: (1, 128, 128, 128)
         img = img.unsqueeze(0)
-        
         check_tensor_size(img, (1, self.patch_size, self.patch_size, self.patch_size), f"Dataset item {idx}")
+        
         return img
 
 def get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_size, patch_size=128):
