@@ -22,7 +22,8 @@ def main():
 
     # Device configuration
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+    print(f"Models initialized and using {device}")
+    logger.info(f"Models initialized and using {device}")
     # Get data loaders
     noncontrast_loader, contrast_loader, test_noncontrast_loader = get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_size)
 

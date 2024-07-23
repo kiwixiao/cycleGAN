@@ -81,7 +81,7 @@ class CTDataset(Dataset):
         
         return img
 
-def get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_size, patch_size=128):
+def get_data_loaders(noncontrast_dir, contrast_dir, test_noncontrast_dir, batch_size, patch_size=64):
     transform = transforms.Compose([
         Normalize(),
         transforms.ToTensor(),
