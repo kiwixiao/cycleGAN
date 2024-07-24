@@ -7,6 +7,10 @@ from torchvision import transforms
 import logging
 import nrrd
 from scipy.ndimage import gaussian_filter
+import SimpleITK as sitk
+import argparse
+
+
 
 # Set up logger
 def setup_logger():
@@ -24,12 +28,12 @@ logger = setup_logger()
 class Normalize(object):
     def __call__(self, image):
         # Normalize image to the range [0, 1]
-        return (image - image.min()) / (image.max() - image.min())
+        return 2 * ((image - image.min()) / (image.max() - image.min())) - 1
 
 # Denormalize function
 def denormalize(image, original_min, original_max):
     # Denormalize image back to the original intensity range
-    return image * (original_max - original_min) + original_min
+    return (image + 1) / 2 * (original_max - original_min) + original_min
 
 # Load model function
 def load_model(checkpoint_path, device):
@@ -38,12 +42,51 @@ def load_model(checkpoint_path, device):
     model.eval()
     return model
 
-# Process image function
-def process_image(image, transform):
-    # Apply transformation and add batch and channel dimensions
-    image = transform(image)
-    image = image.unsqueeze(0).unsqueeze(0)  # (1, 1, D, H, W)
-    return image
+# Resample image function
+def resample_image(image, new_spacing=[0.6, 0.6, 0.6], is_label=False):
+    original_spacing = image.GetSpacing()
+    original_size = image.GetSize()
+
+    new_size = [
+        int(np.round(original_size[0] * (original_spacing[0] / new_spacing[0]))),
+        int(np.round(original_size[1] * (original_spacing[1] / new_spacing[1]))),
+        int(np.round(original_size[2] * (original_spacing[2] / new_spacing[2])))
+    ]
+
+    resample = sitk.ResampleImageFilter()
+    resample.SetOutputSpacing(new_spacing)
+    resample.SetSize(new_size)
+    resample.SetOutputDirection(image.GetDirection())
+    resample.SetOutputOrigin(image.GetOrigin())
+    resample.SetTransform(sitk.Transform())
+    resample.SetDefaultPixelValue(image.GetPixelIDValue())
+    if is_label:
+        resample.SetInterpolator(sitk.sitkNearestNeighbor)
+    else:
+        resample.SetInterpolator(sitk.sitkLinear)
+
+    return resample.Execute(image)
+
+# Load image function
+def load_image(file_path):
+    if file_path.endswith('.nii.gz') or file_path.endswith('nii'):
+        img = sitk.ReadImage(file_path)
+    else:
+        img, header = nrrd.read(file_path)
+        img = sitk.GetImageFromArray(img)
+        spacing = header.get('spacing', None) or [np.linalg.norm(direction) for direction in header.get('space directions', [])]
+        if spacing:
+            img.SetSpacing(spacing)
+    return img
+# Save image function
+def save_image(image, original_image, file_path, postfix):
+    resampled = resample_image(image, original_image.GetSpacing())
+    if file_path.endswith('.nii.gz'):
+        sitk.WriteImage(resampled, file_path.replace('.nii.gz', f'_{postfix}.nii.gz'))
+    else:  # .nrrd
+        img_array = sitk.GetArrayFromImage(resampled)
+        header = {'spacings': original_image.GetSpacing()}
+        nrrd.write(file_path.replace('.nrrd', f'_{postfix}.nrrd'), img_array, header)
 
 def create_gaussian_window(size, sigma):
     """Create a Gaussian window."""
@@ -97,52 +140,33 @@ def infer(checkpoint_path, input_image_path, transform, patch_size=128, step_siz
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = load_model(checkpoint_path, device)
 
-    if input_image_path.endswith('.nii.gz'):
-        img = nib.load(input_image_path)
-        img_data = img.get_fdata()
-        affine = img.affine
-        header = img.header
-        original_dtype = img_data.dtype
-    else:  # .nrrd
-        img_data, header = nrrd.read(input_image_path)
-        affine = None  # NRRD files do not have affine by default
-        original_dtype = img_data.dtype
-        spacing = header.get('space directions')  # Get voxel spacing from NRRD header
+    original_image = load_image(input_image_path)
+    resampled_image = resample_image(original_image)
 
-    img_data = np.clip(img_data, -1000, 1000) # clip the HU between -1000 and 1000, this is how the model is trained as well.
+    img_array = sitk.GetArrayFromImage(resampled_image)
+    img_array = np.clip(img_array, -1000, 1000) # clip the HU between -1000 and 1000, this is how the model is trained as well.
 
-    original_min = img_data.min()
-    original_max = img_data.max()
+    original_min = img_array.min()
+    original_max = img_array.max()
 
-    # Normalize the image data before processing
-    img_data = transform(img_data).permute(2, 0, 1)  # Permute to match the expected shape (D, H, W)
-    img_data = img_data.numpy()  # Convert to numpy array
-    img_data = np.expand_dims(img_data, axis=0)  # Add channel dimension: (1, D, H, W)
+    img_array = transform(img_array).numpy()
+    img_tensor = torch.tensor(img_array, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device)
 
     # Perform sliding window inference
-    predicted_img_data = sliding_window_inference(model, img_data, patch_size, step_size, device)
+    predicted_img_array = sliding_window_inference(model, img_tensor, patch_size, step_size, device)
     # Denormalize the predicted image data back to the original intensity range
-    predicted_img_data = denormalize(predicted_img_data, original_min, original_max)
-    # Ensure the data type matches the original
-    predicted_img_data = predicted_img_data.astype(original_dtype)
-    predicted_img_data = np.squeeze(predicted_img_data).transpose(1, 2, 0)  # Transpose back to original shape
+    predicted_img_array = denormalize(predicted_img_array, original_min, original_max)
+    
+    predicted_img = sitk.GetImageFromArray(predicted_img_array)
+    predicted_img.CopyInformation(resampled_image)
 
-    # Prepare the output file path and save the predicted image
-    if input_image_path.endswith('.nii.gz'):
-        output_image_path = input_image_path.replace('.nii.gz', '_predicted_contrast.nii.gz')
-        predicted_img = nib.Nifti1Image(predicted_img_data, affine, header)
-        nib.save(predicted_img, output_image_path)
-    else:  # .nrrd
-        output_image_path = input_image_path.replace('.nrrd', '_predicted_contrast.nrrd')
-        # Ensure the header includes the correct voxel spacing
-        header['space directions'] = spacing
-        nrrd.write(output_image_path, predicted_img_data, header)
+    save_image(resampled_image, original_image, input_image_path, 'resampled')
+    save_image(predicted_img, original_image, input_image_path, 'fake_contrast')
 
-    logger.info(f"Saved predicted fake contrast image to {output_image_path}")
+    logger.info(f"Saved predicted fake contrast image to {input_image_path.replace('.nii.gz', '_fake_contrast.nii.gz').replace('.nrrd', '_fake_contrast.nrrd')}")
 
 if __name__ == "__main__":
-    import argparse
-    from torchvision import transforms
+
     
     parser = argparse.ArgumentParser(description="Inference script for 3D CycleGAN")
     parser.add_argument("checkpoint_path", type=str, help="Path to the model checkpoint")
