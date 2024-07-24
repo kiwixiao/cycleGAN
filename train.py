@@ -19,7 +19,7 @@ def plot_and_save(training_losses, title, ylabel, filename):
     plt.close()
 
 def denormalize(image, original_min, original_max):
-    return image * (original_max - original_min) + original_min
+    return (image + 1) / 2 * (original_max - original_min) + original_min
 
 def plot_predictions(G_NC2C, test_loader, device, epoch):
     G_NC2C.eval()
